@@ -21,7 +21,7 @@ func TestController_Emulate(t *testing.T) {
 	}{
 		{
 			name: "simple return",
-			methodArea: memory.NewModule(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
+			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
 				17: {
 					0:  []byte{0x08},
 					10: []byte{},
@@ -34,7 +34,7 @@ func TestController_Emulate(t *testing.T) {
 		},
 		{
 			name: "simple add",
-			methodArea: memory.NewModule(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
+			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
 				17: {
 					0:  assembler.AssembleString("pushC64 2 pushC64 3 iAdd64 ret64"),
 					10: []byte{},
@@ -65,4 +65,39 @@ func TestController_Emulate(t *testing.T) {
 			assert.Equal(t, testCase.wantError, gotError, "invalid error code")
 		})
 	}
+}
+
+func BenchmarkLoad(b *testing.B) {
+	var mInterface tempInterface
+	m := memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
+		17: {
+			0:  []byte{0x08, 0x02, 0x06, 0x08, 0x02, 0x06, 0x08, 0x02, 0x06, 0x08, 0x02, 0x06, 0x08, 0x02, 0x06},
+			10: []byte{},
+		},
+	})
+	m.LoadRoot(17).LoadChild(0)
+	mInterface = m
+	temp := make([]byte, 5*1024)
+
+	b.Run("normal", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			for i := 0; i < len(temp)-10; i++ {
+				m.Load64(6, temp, int64(i))
+			}
+		}
+	})
+
+	b.Run("as interface", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			for i := 0; i < len(temp)-10; i++ {
+				mInterface.Load64(6, temp, int64(i))
+			}
+		}
+	})
+}
+
+type tempInterface interface {
+	Load64(int64, []byte, int64)
 }

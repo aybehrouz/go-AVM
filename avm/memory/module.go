@@ -12,10 +12,6 @@ type Module struct {
 	current []byte
 }
 
-func NewModule(chunks map[Identifier64]map[Identifier64][]byte) *Module {
-	return &Module{chunks: chunks}
-}
-
 func (m *Module) LoadRoot(id Identifier64) *Module {
 	m.root = m.chunks[id]
 	m.current = nil
@@ -59,4 +55,8 @@ func (m *Module) Discard() {
 
 func (m *Module) Save() {
 
+}
+
+func NewMocker(chunks map[Identifier64]map[Identifier64][]byte) *Module {
+	return &Module{chunks: chunks}
 }

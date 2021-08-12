@@ -59,10 +59,6 @@ func Copy32(dst []byte, dstOffset int64, src []byte, srcOffset int64) {
 func CopyBytes(dst []byte, dstOffset int64, src []byte, srcOffset int64, n int64) {
 	if n == 8 {
 		Copy64(dst, dstOffset, src, srcOffset)
-	} else if n == 4 {
-		Copy32(dst, dstOffset, src, srcOffset)
-	} else if n == 1 {
-		dst[dstOffset] = src[srcOffset]
 	} else {
 		copy(dst[dstOffset:dstOffset+n], src[srcOffset:srcOffset+n])
 	}

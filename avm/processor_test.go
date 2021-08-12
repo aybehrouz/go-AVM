@@ -2,7 +2,6 @@ package avm
 
 import (
 	"fmt"
-	"go-AVM/avm/binary"
 	"math"
 	"testing"
 )
@@ -33,6 +32,7 @@ func TestFloat(t *testing.T) {
 	fmt.Printf("%v\n", add(a, bt))
 	fmt.Printf("%v", f1+f2)
 }
+
 func BenchmarkProcessor_iAdd64(b *testing.B) {
 	p := Processor{}
 	p.current = &CallInfo{
@@ -41,16 +41,5 @@ func BenchmarkProcessor_iAdd64(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		p.iAdd64()
-	}
-}
-
-func BenchmarkCopy(b *testing.B) {
-	bytes := make([][8]byte, 500)
-	dst := make([]byte, 8)
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < 490; j++ {
-			binary.CopyBytes(dst, 0, bytes[j][:], 0, 4)
-			// copy(dst, bytes[j][:])
-		}
 	}
 }

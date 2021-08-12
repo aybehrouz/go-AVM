@@ -45,3 +45,27 @@ func TestReadInt64(t *testing.T) {
 func TestCopyBytes(t *testing.T) {
 
 }
+
+func BenchmarkCopy(b *testing.B) {
+	src := make([]byte, 5*1024)
+	dst := make([]byte, 5*1024)
+
+	b.Run("unsafe", func(bb *testing.B) {
+		bb.ResetTimer()
+		for i := 0; i < bb.N; i++ {
+			for i := 0; i < len(src)-20; i++ {
+				Copy64(dst, int64(i), src, int64(i))
+			}
+		}
+	})
+
+	b.Run("go copy", func(bb *testing.B) {
+		bb.ResetTimer()
+		for i := 0; i < bb.N; i++ {
+			for i := 0; i < len(src)-20; i++ {
+				copy(dst[i:], src[i:i+8])
+			}
+		}
+	})
+
+}
