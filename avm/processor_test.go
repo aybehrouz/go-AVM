@@ -1,8 +1,8 @@
 package avm
 
 import (
-	"avm/binary"
 	"fmt"
+	"go-AVM/avm/binary"
 	"math"
 	"testing"
 )

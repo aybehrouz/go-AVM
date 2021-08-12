@@ -1,9 +1,9 @@
 package avm
 
 import (
-	"avm/binary"
-	"avm/memory"
-	"avm/prefix"
+	"go-AVM/avm/binary"
+	"go-AVM/avm/memory"
+	"go-AVM/avm/prefix"
 )
 
 const DispatcherID = 0
@@ -28,6 +28,7 @@ const (
 	UnderFlow
 	PrecisionLoss
 	Reentrancy
+	RuntimeError
 )
 
 type CallInfo struct {

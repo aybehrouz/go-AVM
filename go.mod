@@ -1,4 +1,4 @@
-module avm
+module go-AVM
 
 go 1.16
 

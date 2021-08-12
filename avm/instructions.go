@@ -1,16 +1,14 @@
 package avm
 
 import (
-	"avm/binary"
-	"avm/prefix"
+	"go-AVM/avm/binary"
+	"go-AVM/avm/prefix"
 )
 
 func (p *Processor) noOp() {}
 
 func (p *Processor) invokeDispatcher() {
-	top := p.current.operandStack.length()
-	appID := binary.ReadIdentifier64(p.current.operandStack.content, top-8)
-	p.current.operandStack.shrinkTo(top - 8)
+	appID := p.popIdentifier64()
 	p.callMethod(appID, appID, DispatcherID)
 }
 
@@ -24,9 +22,7 @@ func (p *Processor) spawnDispatcher() {
 	if p.findIndependentCaller() != 0 {
 		panic(InvalidSpawnState)
 	}
-	top := p.current.operandStack.length()
-	appID := binary.ReadIdentifier64(p.current.operandStack.content, top-8)
-	p.current.operandStack.shrinkTo(top - 8)
+	appID := p.popIdentifier64()
 	p.callStackQueue = append(p.callStackQueue, []*CallInfo{&CallInfo{
 		pc:      0,
 		context: appID,
@@ -42,10 +38,7 @@ func (p *Processor) spawnDispatcher() {
 }
 
 func (p *Processor) invokeInternal() {
-	top := p.current.operandStack.length()
-	localID := binary.ReadIdentifier64(p.current.operandStack.content, top-8)
-	p.current.operandStack.shrinkTo(top - 8)
-	p.callMethod(p.current.context, p.current.methodID.appID, localID)
+	p.callMethod(p.current.context, p.current.methodID.appID, p.popIdentifier64())
 }
 
 func (p *Processor) indInvokeInternal() {
@@ -78,12 +71,11 @@ func (p *Processor) enter() {
 	p.entranceLocks[p.current.context] = p.current.entranceLock
 }
 
-func (p *Processor) cPush8() {
-	c := int64(p.methodArea.LoadByte(p.current.pc))
-	p.current.pc++
+func (p *Processor) pushC64() {
 	top := p.current.operandStack.length()
 	p.current.operandStack.ensureLen(top + 8)
-	binary.PutInt64(p.current.operandStack.content, top, c)
+	p.methodArea.Load64(p.current.pc, p.current.operandStack.content, top)
+	p.current.pc += 8
 }
 
 func (p *Processor) iAdd64() {
@@ -92,6 +84,20 @@ func (p *Processor) iAdd64() {
 	b := binary.ReadInt64(p.current.operandStack.content, top-16)
 	binary.PutInt64(p.current.operandStack.content, top-16, a+b)
 	p.current.operandStack.shrinkTo(top - 8)
+}
+
+func (p *Processor) popIdentifier64() prefix.Identifier64 {
+	top := p.current.operandStack.length()
+	id := binary.ReadIdentifier64(p.current.operandStack.content, top-8)
+	p.current.operandStack.shrinkTo(top - 8)
+	return id
+}
+
+func (p *Processor) popInt64() int64 {
+	return 0
+}
+
+func (p *Processor) pushInt64(v int64) {
 }
 
 /*

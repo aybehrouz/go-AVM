@@ -1,6 +1,9 @@
 package memory
 
-import . "avm/prefix"
+import (
+	"go-AVM/avm/binary"
+	. "go-AVM/avm/prefix"
+)
 
 // Module error handling will be done by panicking instead of returning errors
 type Module struct {
@@ -28,7 +31,8 @@ func (m *Module) UnLoadChild() *Module {
 	return nil
 }
 
-func (m *Module) LoadBytes(offset int64, dst []byte, dstOffset int64, n int64) {
+func (m *Module) Load64(chunkOffset int64, dst []byte, dstOffset int64) {
+	binary.Copy64(dst, dstOffset, m.current, chunkOffset)
 }
 
 func (m *Module) StoreBytes8(offset int64, src []byte) {

@@ -1,7 +1,7 @@
 package binary
 
 import (
-	"avm/prefix"
+	"go-AVM/avm/prefix"
 	"unsafe"
 )
 

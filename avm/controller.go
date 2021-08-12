@@ -1,8 +1,10 @@
 package avm
 
 import (
-	"avm/memory"
-	"avm/prefix"
+	"go-AVM/avm/memory"
+	"go-AVM/avm/prefix"
+	"log"
+	"reflect"
 )
 
 //go:generate awk -f prog.awk controller.go
@@ -30,7 +32,7 @@ func NewController() (c *Controller) {
 		0x0a: nil,
 		0x0b: c.processor.throw,
 		0x0c: c.processor.enter,
-		0x10: c.processor.cPush8,
+		0x10: c.processor.pushC64,
 		0x11: c.processor.iAdd64,
 	}
 	return
@@ -56,10 +58,12 @@ func (c *Controller) Emulate() ([]byte, ErrorCode) {
 	return c.processor.returnData, c.processor.errorStatus
 }
 
-func (c *Controller) EmulateNextInstruction() bool {
+func (c *Controller) EmulateNextInstruction() (eof bool) {
 	defer func() {
 		if r := recover(); r != nil {
+			log.Println(r)
 			c.processor.throwBytes(0, convertToErrorCode(r))
+			eof = false
 		}
 	}()
 	opcode, eof := c.processor.nextOpcode()
@@ -71,5 +75,12 @@ func (c *Controller) EmulateNextInstruction() bool {
 }
 
 func convertToErrorCode(r interface{}) ErrorCode {
-	return 2
+	switch reflect.TypeOf(r).String() {
+	case "runtime.boundsError":
+		return OutOfBounds
+	case "avm.ErrorCode":
+		return r.(ErrorCode)
+	default:
+		return RuntimeError
+	}
 }
