@@ -52,17 +52,12 @@ func (m *Module) StoreBytes(offset int64, num int, src []byte) {
 }
 
 func (m *Module) Restore() {
-	println("Restore")
-
 }
 
 func (m *Module) Discard() {
-	println("Discard")
-
 }
 
 func (m *Module) Save() {
-	println("Save")
 }
 
 func NewMocker(chunks map[Identifier64]map[Identifier64][]byte) *Module {

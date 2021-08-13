@@ -1,7 +1,6 @@
 package avm
 
 import (
-	"fmt"
 	"go-AVM/avm/binary"
 )
 
@@ -45,10 +44,8 @@ func (p *Processor) ret64() {
 }
 
 func (p *Processor) throw() {
-	fmt.Printf("st:%v", p.current.operandStack.content)
 	top := p.current.operandStack.length()
 	n := binary.ReadUint16(p.current.operandStack.content, top-2)
-	println("n===", n)
 	p.throwBytes(int64(n)+2, SoftwareError)
 }
 

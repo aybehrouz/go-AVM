@@ -7,14 +7,14 @@ import (
 	"reflect"
 )
 
-//go:generate awk -f prog.awk controller.go
-
 type Opcode byte
 
 type Controller struct {
 	processor           Processor
 	instructionRoutines []func()
 }
+
+//go:generate /bin/sh awk.sh
 
 func NewController() (c *Controller) {
 	c = &Controller{}
@@ -25,11 +25,8 @@ func NewController() (c *Controller) {
 		0x03: c.processor.spawnDispatcher,
 		0x04: c.processor.invokeInternal,
 		0x05: c.processor.indInvokeInternal,
-		0x06: nil,
-		0x07: nil,
 		0x08: c.processor.ret0,
 		0x09: c.processor.ret64,
-		0x0a: nil,
 		0x0b: c.processor.throw,
 		0x0c: c.processor.enter,
 		0x10: c.processor.pushC64,
