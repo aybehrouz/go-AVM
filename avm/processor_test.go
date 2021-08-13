@@ -14,7 +14,7 @@ func TestProcessor_iAdd64(t *testing.T) {
 	p.operandStack.ensureLen(16)
 	p.operandStack.content[0] = 3
 	p.operandStack.content[8] = 4
-	p.iAdd64()
+	p.iAdd()
 	fmt.Printf("%v", p.operandStack)
 	println(cap(p.operandStack.content))
 }
@@ -40,6 +40,6 @@ func BenchmarkProcessor_iAdd64(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.iAdd64()
+		p.iAdd()
 	}
 }

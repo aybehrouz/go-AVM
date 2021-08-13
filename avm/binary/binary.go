@@ -28,6 +28,11 @@ func PutInt64(dst []byte, offset int64, v int64) {
 	*(*int64)(unsafe.Pointer(&dst[offset])) = v
 }
 
+func ReadUint16(src []byte, offset int64) uint16 {
+	_ = src[offset+1]
+	return *(*uint16)(unsafe.Pointer(&src[offset]))
+}
+
 func ReadInt32(b []byte, offset int64) int32 {
 	_ = b[offset+3]
 	return *(*int32)(unsafe.Pointer(&b[offset]))

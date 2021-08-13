@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -54,15 +55,26 @@ func assemble(r io.Reader) (bytecode []byte) {
 	wordScanner.Split(bufio.ScanWords)
 	for wordScanner.Scan() {
 		token := wordScanner.Text()
-		v, err := strconv.ParseInt(token, 10, 64)
+		v, err := strconv.ParseInt(token, 0, 64)
 		if err == nil {
 			b := make([]byte, 8)
 			binary.PutInt64(b, 0, v)
 			bytecode = append(bytecode, b...)
+		} else if matched, _ := regexp.MatchString("[1-8][d][0-9|-]", token); matched {
+			parts := strings.Split(token, "d")
+			v, err = strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			bytes, _ := strconv.Atoi(parts[0])
+
+			b := make([]byte, 8)
+			binary.PutInt64(b, 0, v)
+			bytecode = append(bytecode, b[:bytes]...)
 		} else {
 			opcode, ok := opcodes[token]
 			if !ok {
-				log.Fatal("unknown instruction")
+				log.Fatal("unknown instruction: " + token)
 			}
 			bytecode = append(bytecode, opcode)
 		}

@@ -13,6 +13,7 @@ const (
 	MaxOpStackSize        = 128 * 1024
 	InitialLocalFrameSize = 4 * 1024
 	MaxLocalFrameSize     = 256 * 1024
+	MaxCallStackDepth     = 1024
 )
 
 type ErrorCode int
@@ -22,8 +23,9 @@ const (
 	InvalidOperands
 	InvalidSpawnState
 	SoftwareError
-	OutOfBounds
-	OutOfMemory
+	InvalidReference
+	MemoryLimitExceeded
+	MaxCallStackDepthExceeded
 	OverFlow
 	UnderFlow
 	PrecisionLoss
@@ -66,8 +68,8 @@ func newProcessor(nextLocalFrame *dynamicArray, heap, methodArea *memory.Module)
 	}
 }
 
-func (p *Processor) callMethod(context, app, method prefix.Identifier64) {
-	p.callStackQueue[0] = append(p.callStackQueue[0], &CallInfo{
+func (p *Processor) callMethod(context, app, method prefix.Identifier64, spawn bool) {
+	newCallInfo := &CallInfo{
 		context: context,
 		methodID: struct {
 			appID   prefix.Identifier64
@@ -75,9 +77,21 @@ func (p *Processor) callMethod(context, app, method prefix.Identifier64) {
 		}{app, method},
 		operandStack: newOperandStack(),
 		localFrame:   p.nextLocalFrame,
-	})
-	p.updateCurrentCallContext()
-	p.errorStatus = NoError
+	}
+	if spawn {
+		if len(p.callStackQueue) == MaxCallStackDepth {
+			panic(MaxCallStackDepthExceeded)
+		}
+		p.callStackQueue = append(p.callStackQueue, []*CallInfo{newCallInfo})
+		p.nextLocalFrame = newLocalFrame()
+	} else {
+		if len(p.callStackQueue[0]) == MaxCallStackDepth {
+			panic(MaxCallStackDepthExceeded)
+		}
+		p.callStackQueue[0] = append(p.callStackQueue[0], newCallInfo)
+		p.updateCurrentCallContext()
+		p.errorStatus = NoError
+	}
 }
 
 func (p *Processor) updateCurrentCallContext() {
@@ -140,7 +154,9 @@ func (p *Processor) returnBytes(n int64, status ErrorCode) {
 func (p *Processor) throwBytes(n int64, code ErrorCode) {
 	ic := p.findIndependentCaller()
 	for i := ic + 1; i < len(p.callStackQueue[0]); i++ {
-		*p.callStackQueue[0][i].entranceLock = false
+		if p.callStackQueue[0][i].entranceLock != nil {
+			*p.callStackQueue[0][i].entranceLock = false
+		}
 		p.callStackQueue[0][i] = nil
 	}
 	p.callStackQueue[0] = p.callStackQueue[0][:ic+1]
@@ -163,56 +179,4 @@ func (p *Processor) nextOpcode() (Opcode, bool) {
 	opcode := Opcode(p.methodArea.LoadByte(p.current.pc))
 	p.current.pc++
 	return opcode, false
-}
-
-type dynamicArray struct {
-	content []byte
-	maxSize int64
-}
-
-func (da *dynamicArray) shrinkTo(length int64) {
-	da.content = da.content[:length]
-}
-
-func (da *dynamicArray) ensureLen(length int64) *dynamicArray {
-	if length <= int64(len(da.content)) {
-		return da
-	}
-	if length <= int64(cap(da.content)) {
-		da.content = da.content[:length]
-		return da
-	}
-	if length > da.maxSize {
-		panic("max size exceeded")
-	}
-
-	b := make([]byte, min(da.maxSize, 2*length))
-	copy(b, da.content)
-	da.content = b[:length]
-	return da
-}
-
-func (da *dynamicArray) length() int64 {
-	return int64(len(da.content))
-}
-
-func newOperandStack() *dynamicArray {
-	return &dynamicArray{
-		content: make([]byte, 0, InitialOpStackSize),
-		maxSize: MaxOpStackSize,
-	}
-}
-
-func newLocalFrame() *dynamicArray {
-	return &dynamicArray{
-		content: make([]byte, InitialLocalFrameSize),
-		maxSize: MaxLocalFrameSize,
-	}
-}
-
-func min(a, b int64) int64 {
-	if a < b {
-		return a
-	}
-	return b
 }

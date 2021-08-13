@@ -27,13 +27,17 @@ func NewController() (c *Controller) {
 		0x05: c.processor.indInvokeInternal,
 		0x06: nil,
 		0x07: nil,
-		0x08: c.processor.ret,
+		0x08: c.processor.ret0,
 		0x09: c.processor.ret64,
 		0x0a: nil,
 		0x0b: c.processor.throw,
 		0x0c: c.processor.enter,
 		0x10: c.processor.pushC64,
-		0x11: c.processor.iAdd64,
+		0x11: c.processor.iAdd,
+		0x12: c.processor.argC16,
+		0x13: c.processor.lfLoadC16,
+		0x14: c.processor.lfStoreC16,
+		0x15: c.processor.jmpEqC16,
 	}
 	return
 }
@@ -44,7 +48,7 @@ func (c *Controller) SetupNewSession(calledApp prefix.Identifier64, argumentBuff
 		content: argumentBuffer,
 		maxSize: MaxLocalFrameSize,
 	}, heap, methodArea)
-	c.processor.callMethod(calledApp, calledApp, DispatcherID)
+	c.processor.callMethod(calledApp, calledApp, DispatcherID, false)
 	c.processor.current.isIndependent = true
 	c.processor.heap.Save()
 	return c
@@ -77,7 +81,7 @@ func (c *Controller) EmulateNextInstruction() (eof bool) {
 func convertToErrorCode(r interface{}) ErrorCode {
 	switch reflect.TypeOf(r).String() {
 	case "runtime.boundsError":
-		return OutOfBounds
+		return InvalidReference
 	case "avm.ErrorCode":
 		return r.(ErrorCode)
 	default:

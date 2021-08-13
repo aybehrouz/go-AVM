@@ -13,12 +13,14 @@ type Module struct {
 }
 
 func (m *Module) LoadRoot(id Identifier64) *Module {
+	// println("root changed:-> ", id)
 	m.root = m.chunks[id]
 	m.current = nil
 	return m
 }
 
 func (m *Module) LoadChild(id Identifier64) *Module {
+	// println("child changed:-> ", id)
 	m.current = m.root[id]
 	return nil
 }
@@ -29,6 +31,10 @@ func (m *Module) UnLoadChild() *Module {
 
 func (m *Module) Load64(chunkOffset int64, dst []byte, dstOffset int64) {
 	binary.Copy64(dst, dstOffset, m.current, chunkOffset)
+}
+
+func (m *Module) LoadUint16(offset int64) uint16 {
+	return binary.ReadUint16(m.current, offset)
 }
 
 func (m *Module) StoreBytes8(offset int64, src []byte) {
@@ -46,15 +52,17 @@ func (m *Module) StoreBytes(offset int64, num int, src []byte) {
 }
 
 func (m *Module) Restore() {
+	println("Restore")
 
 }
 
 func (m *Module) Discard() {
+	println("Discard")
 
 }
 
 func (m *Module) Save() {
-
+	println("Save")
 }
 
 func NewMocker(chunks map[Identifier64]map[Identifier64][]byte) *Module {

@@ -1,15 +1,15 @@
 package avm
 
 import (
+	"fmt"
 	"go-AVM/avm/binary"
-	"go-AVM/avm/prefix"
 )
 
 func (p *Processor) noOp() {}
 
 func (p *Processor) invokeDispatcher() {
 	appID := p.popIdentifier64()
-	p.callMethod(appID, appID, DispatcherID)
+	p.callMethod(appID, appID, DispatcherID, false)
 }
 
 func (p *Processor) indInvokeDispatcher() {
@@ -23,22 +23,11 @@ func (p *Processor) spawnDispatcher() {
 		panic(InvalidSpawnState)
 	}
 	appID := p.popIdentifier64()
-	p.callStackQueue = append(p.callStackQueue, []*CallInfo{&CallInfo{
-		pc:      0,
-		context: appID,
-		methodID: struct {
-			appID   prefix.Identifier64
-			localID prefix.Identifier64
-		}{appID, DispatcherID},
-		isIndependent: false,
-		operandStack:  newOperandStack(),
-		localFrame:    p.nextLocalFrame,
-	}})
-	p.nextLocalFrame = newLocalFrame()
+	p.callMethod(appID, appID, DispatcherID, true)
 }
 
 func (p *Processor) invokeInternal() {
-	p.callMethod(p.current.context, p.current.methodID.appID, p.popIdentifier64())
+	p.callMethod(p.current.context, p.current.methodID.appID, p.popIdentifier64(), false)
 }
 
 func (p *Processor) indInvokeInternal() {
@@ -47,7 +36,7 @@ func (p *Processor) indInvokeInternal() {
 	p.heap.Save()
 }
 
-func (p *Processor) ret() {
+func (p *Processor) ret0() {
 	p.returnBytes(0, NoError)
 }
 
@@ -56,9 +45,11 @@ func (p *Processor) ret64() {
 }
 
 func (p *Processor) throw() {
+	fmt.Printf("st:%v", p.current.operandStack.content)
 	top := p.current.operandStack.length()
-	n := p.current.operandStack.content[top-1]
-	p.throwBytes(int64(n)+1, SoftwareError)
+	n := binary.ReadUint16(p.current.operandStack.content, top-2)
+	println("n===", n)
+	p.throwBytes(int64(n)+2, SoftwareError)
 }
 
 func (p *Processor) enter() {
@@ -78,7 +69,7 @@ func (p *Processor) pushC64() {
 	p.current.pc += 8
 }
 
-func (p *Processor) iAdd64() {
+func (p *Processor) iAdd() {
 	top := p.current.operandStack.length()
 	a := binary.ReadInt64(p.current.operandStack.content, top-8)
 	b := binary.ReadInt64(p.current.operandStack.content, top-16)
@@ -86,34 +77,43 @@ func (p *Processor) iAdd64() {
 	p.current.operandStack.shrinkTo(top - 8)
 }
 
-func (p *Processor) popIdentifier64() prefix.Identifier64 {
+func (p *Processor) argC16() {
+	offset := int64(p.methodArea.LoadUint16(p.current.pc))
+	p.current.pc += 2
 	top := p.current.operandStack.length()
-	id := binary.ReadIdentifier64(p.current.operandStack.content, top-8)
+	binary.Copy64(p.nextLocalFrame.content, offset, p.current.operandStack.content, top-8)
 	p.current.operandStack.shrinkTo(top - 8)
-	return id
 }
 
-func (p *Processor) popInt64() int64 {
-	return 0
+func (p *Processor) lfLoadC16() {
+	offset := int64(p.methodArea.LoadUint16(p.current.pc))
+	p.current.pc += 2
+	top := p.current.operandStack.length()
+	p.current.operandStack.ensureLen(top + 8)
+	binary.Copy64(p.current.operandStack.content, top, p.current.localFrame.content, offset)
 }
 
-func (p *Processor) pushInt64(v int64) {
+func (p *Processor) lfStoreC16() {
+	offset := int64(p.methodArea.LoadUint16(p.current.pc))
+	p.current.pc += 2
+	top := p.current.operandStack.length()
+	binary.Copy64(p.current.localFrame.content, offset, p.current.operandStack.content, top-8)
+	p.current.operandStack.shrinkTo(top - 8)
+}
+
+func (p *Processor) jmpEqC16() {
+	top := p.current.operandStack.length()
+	a := binary.ReadInt64(p.current.operandStack.content, top-8)
+	b := binary.ReadInt64(p.current.operandStack.content, top-16)
+	p.current.pc += 2
+	if a == b {
+		offset := int64(int16(p.methodArea.LoadUint16(p.current.pc - 2)))
+		p.current.pc += offset
+	}
 }
 
 /*
 // we will only have 64bit offset smaller integers will be used for push
-func (p *Processor) lFrameLoad64() {
-	top := p.operandStack.length()
-	offset := binary.ReadInt64(p.operandStack.content, top-8)
-	binary.CopyBytes(p.operandStack.content, top-8, p.localFrame.content, offset, 8)
-}
-
-func (p *Processor) push64() {
-	top := p.operandStack.length()
-	p.operandStack.ensureLen(top + 8)
-	p.methodArea.LoadBytes(pc)
-
-}
 
 func (p *Processor) hLoadLocal() {
 	p.heap.LoadChild(0).LoadChild(readIdentifier64(p.operandStack.content, p.operandStack.top-8))
@@ -133,12 +133,5 @@ func (p *Processor) hLoad64() {
 	if err != nil {
 		panic("ijkhjknt")
 	}
-}
-
-
-func (p *Processor) invokeInternal() {
-	// callInfo {opstack, localFram, pc, methodID}
-	p.operandStack = new
-	p.localFrame = new
 }
 */

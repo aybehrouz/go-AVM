@@ -67,5 +67,4 @@ func BenchmarkCopy(b *testing.B) {
 			}
 		}
 	})
-
 }
