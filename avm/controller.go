@@ -33,11 +33,13 @@ func NewController() (c *Controller) {
 		0x0b: c.processor.throw,
 		0x0c: c.processor.enter,
 		0x10: c.processor.pushC64,
-		0x11: c.processor.iAdd,
-		0x12: c.processor.argC16,
-		0x13: c.processor.lfLoadC16,
-		0x14: c.processor.lfStoreC16,
-		0x15: c.processor.jmpEqC16,
+		0x11: c.processor.pop64,
+		0x12: c.processor.iAdd,
+		0x13: c.processor.iSub,
+		0x14: c.processor.argC16,
+		0x15: c.processor.lfLoadC16,
+		0x16: c.processor.lfStoreC16,
+		0x17: c.processor.jmpEqC16,
 	}
 	return
 }

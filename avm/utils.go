@@ -64,6 +64,19 @@ func (p *Processor) popIdentifier64() prefix.Identifier64 {
 	return id
 }
 
+func (p *Processor) readConst16() uint16 {
+	c := p.methodArea.LoadUint16(p.current.pc)
+	p.current.pc += 2
+	return c
+}
+
+func (p *Processor) peekInt64() (a int64, b int64, top int64) {
+	top = p.current.operandStack.length()
+	a = binary.ReadInt64(p.current.operandStack.content, top-8)
+	b = binary.ReadInt64(p.current.operandStack.content, top-16)
+	return
+}
+
 func (p *Processor) popInt64() int64 {
 	return 0
 }

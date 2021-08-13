@@ -69,46 +69,50 @@ func (p *Processor) pushC64() {
 	p.current.pc += 8
 }
 
+func (p *Processor) pop64() {
+	p.current.operandStack.shrinkTo(p.current.operandStack.length() - 8)
+}
+
 func (p *Processor) iAdd() {
-	top := p.current.operandStack.length()
-	a := binary.ReadInt64(p.current.operandStack.content, top-8)
-	b := binary.ReadInt64(p.current.operandStack.content, top-16)
+	a, b, top := p.peekInt64()
 	binary.PutInt64(p.current.operandStack.content, top-16, a+b)
 	p.current.operandStack.shrinkTo(top - 8)
 }
 
+func (p *Processor) iSub() {
+	a, b, top := p.peekInt64()
+	binary.PutInt64(p.current.operandStack.content, top-16, b-a)
+	p.current.operandStack.shrinkTo(top - 8)
+}
+
 func (p *Processor) argC16() {
-	offset := int64(p.methodArea.LoadUint16(p.current.pc))
-	p.current.pc += 2
+	offset := int64(p.readConst16())
 	top := p.current.operandStack.length()
 	binary.Copy64(p.nextLocalFrame.content, offset, p.current.operandStack.content, top-8)
 	p.current.operandStack.shrinkTo(top - 8)
 }
 
 func (p *Processor) lfLoadC16() {
-	offset := int64(p.methodArea.LoadUint16(p.current.pc))
-	p.current.pc += 2
+	offset := int64(p.readConst16())
 	top := p.current.operandStack.length()
 	p.current.operandStack.ensureLen(top + 8)
 	binary.Copy64(p.current.operandStack.content, top, p.current.localFrame.content, offset)
 }
 
 func (p *Processor) lfStoreC16() {
-	offset := int64(p.methodArea.LoadUint16(p.current.pc))
-	p.current.pc += 2
+	offset := int64(p.readConst16())
 	top := p.current.operandStack.length()
 	binary.Copy64(p.current.localFrame.content, offset, p.current.operandStack.content, top-8)
 	p.current.operandStack.shrinkTo(top - 8)
 }
 
 func (p *Processor) jmpEqC16() {
-	top := p.current.operandStack.length()
-	a := binary.ReadInt64(p.current.operandStack.content, top-8)
-	b := binary.ReadInt64(p.current.operandStack.content, top-16)
-	p.current.pc += 2
+	a, b, _ := p.peekInt64()
 	if a == b {
-		offset := int64(int16(p.methodArea.LoadUint16(p.current.pc - 2)))
+		offset := int64(int16(p.readConst16()))
 		p.current.pc += offset
+	} else {
+		p.current.pc += 2
 	}
 }
 
