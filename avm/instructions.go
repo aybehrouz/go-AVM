@@ -1,3 +1,20 @@
+// Copyright (c) 2021 aybehrouz <behrouz_ayati@yahoo.com>. This file is
+// part of the go-avm repository: the Go implementation of the Argennon
+// Virtual Machine (AVM).
+//
+// This program is free software: you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the
+// Free Software Foundation, either version 3 of the License, or (at your
+// option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+// Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program. If not, see <https://www.gnu.org/licenses/>.
+
 package avm
 
 import (
@@ -6,6 +23,18 @@ import (
 
 func (p *Processor) noOp() {}
 
+// invokeDispatcher invokes the dispatcher method of another application
+//
+// Format:
+//		invokeDispatcher
+// OperandStack:
+// 		[..., id64 ->
+// 		[... <-
+// Description:
+//
+// `id64` is the 64-bit representation of the applicationID of the called
+// application. This identifier value is popped from the stack and nothing
+// is pushed onto the stack.
 func (p *Processor) invokeDispatcher() {
 	appID := p.popIdentifier64()
 	p.callMethod(appID, appID, DispatcherID, false)
@@ -89,17 +118,32 @@ func (p *Processor) argC16() {
 	p.current.operandStack.shrinkTo(top - 8)
 }
 
+// lfLoadC16 loads 64 bits from the local frame using a 16-bit unsigned
+// constant index
+//
+// Format:
+//		lfLoadC16 2bIndex
+// OperandStack:
+// 		[... ->
+// 		[..., value <-
+// Description:
+//
+// The `Index` is an unsigned 16-bit integer that must be an index into the
+// current local frame. Eight bytes from the position `Index` to `Index+7`
+// (inclusive) of the local frame is considered as a single `value` and is
+// pushed onto the operand stack.
 func (p *Processor) lfLoadC16() {
-	offset := int64(p.readConst16())
+	index := int64(p.readConst16())
 	top := p.current.operandStack.length()
 	p.current.operandStack.ensureLen(top + 8)
-	binary.Copy64(p.current.operandStack.content, top, p.current.localFrame.content, offset)
+	binary.Copy64(p.current.operandStack.content, top, p.current.localFrame.content, index)
 }
 
 func (p *Processor) lfStoreC16() {
-	offset := int64(p.readConst16())
+	index := int64(p.readConst16())
 	top := p.current.operandStack.length()
-	binary.Copy64(p.current.localFrame.content, offset, p.current.operandStack.content, top-8)
+	p.current.localFrame.ensureLen(index + 8)
+	binary.Copy64(p.current.localFrame.content, index, p.current.operandStack.content, top-8)
 	p.current.operandStack.shrinkTo(top - 8)
 }
 
