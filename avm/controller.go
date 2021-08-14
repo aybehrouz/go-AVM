@@ -65,7 +65,7 @@ func (c *Controller) SetupNewSession(calledApp prefix.Identifier64, argumentBuff
 		content: argumentBuffer,
 		maxSize: MaxLocalFrameSize,
 	}, heap, methodArea)
-	c.processor.callMethod(calledApp, calledApp, DispatcherID, false)
+	c.processor.callMethod(calledApp, calledApp, DispatcherID)
 	c.processor.current.isIndependent = true
 	c.processor.heap.Save()
 	return c

@@ -85,8 +85,8 @@ func newProcessor(nextLocalFrame *dynamicArray, heap, methodArea *memory.Module)
 	}
 }
 
-func (p *Processor) callMethod(context, app, method prefix.Identifier64, spawn bool) {
-	newCallInfo := &CallInfo{
+func (p *Processor) newCallInfo(context, app, method prefix.Identifier64) *CallInfo {
+	return &CallInfo{
 		context: context,
 		methodID: struct {
 			appID   prefix.Identifier64
@@ -95,20 +95,15 @@ func (p *Processor) callMethod(context, app, method prefix.Identifier64, spawn b
 		operandStack: newOperandStack(),
 		localFrame:   p.nextLocalFrame,
 	}
-	if spawn {
-		if len(p.callStackQueue) == MaxCallStackDepth {
-			panic(MaxCallStackDepthExceeded)
-		}
-		p.callStackQueue = append(p.callStackQueue, []*CallInfo{newCallInfo})
-		p.nextLocalFrame = newLocalFrame()
-	} else {
-		if len(p.callStackQueue[0]) == MaxCallStackDepth {
-			panic(MaxCallStackDepthExceeded)
-		}
-		p.callStackQueue[0] = append(p.callStackQueue[0], newCallInfo)
-		p.updateCurrentCallContext()
-		p.errorStatus = NoError
+}
+
+func (p *Processor) callMethod(context, app, method prefix.Identifier64) {
+	if len(p.callStackQueue[0]) == MaxCallStackDepth {
+		panic(MaxCallStackDepthExceeded)
 	}
+	p.callStackQueue[0] = append(p.callStackQueue[0], p.newCallInfo(context, app, method))
+	p.updateCurrentCallContext()
+	p.errorStatus = NoError
 }
 
 func (p *Processor) updateCurrentCallContext() {

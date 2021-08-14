@@ -37,7 +37,7 @@ func (p *Processor) noOp() {}
 // is pushed onto the stack.
 func (p *Processor) invokeDispatcher() {
 	appID := p.popIdentifier64()
-	p.callMethod(appID, appID, DispatcherID, false)
+	p.callMethod(appID, appID, DispatcherID)
 }
 
 func (p *Processor) indInvokeDispatcher() {
@@ -50,12 +50,17 @@ func (p *Processor) spawnDispatcher() {
 	if p.findIndependentCaller() != 0 {
 		panic(InvalidSpawnState)
 	}
+	if len(p.callStackQueue) == MaxCallStackDepth {
+		panic(MaxCallStackDepthExceeded)
+	}
+
 	appID := p.popIdentifier64()
-	p.callMethod(appID, appID, DispatcherID, true)
+	p.callStackQueue = append(p.callStackQueue, []*CallInfo{p.newCallInfo(appID, appID, DispatcherID)})
+	p.nextLocalFrame = newLocalFrame()
 }
 
 func (p *Processor) invokeInternal() {
-	p.callMethod(p.current.context, p.current.methodID.appID, p.popIdentifier64(), false)
+	p.callMethod(p.current.context, p.current.methodID.appID, p.popIdentifier64())
 }
 
 func (p *Processor) indInvokeInternal() {
