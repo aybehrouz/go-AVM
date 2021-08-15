@@ -48,7 +48,7 @@ func NewController() (c *Controller) {
 		0x0b: c.processor.throw,
 		0x0c: c.processor.enter,
 		0x10: c.processor.pushC64,
-		0x11: c.processor.pop64,
+		0x11: c.processor.pop,
 		0x12: c.processor.iAdd,
 		0x13: c.processor.iSub,
 		0x14: c.processor.argC16,
@@ -82,7 +82,7 @@ func (c *Controller) Emulate() ([]byte, ErrorCode) {
 func (c *Controller) EmulateNextInstruction() (eof bool) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println(r)
+			log.Println("panic: ", r)
 			c.processor.throwBytes(0, convertToErrorCode(r))
 			eof = false
 		}

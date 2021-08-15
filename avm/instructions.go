@@ -42,6 +42,8 @@ func (p *Processor) invokeDispatcher() {
 
 func (p *Processor) indInvokeDispatcher() {
 	p.invokeDispatcher()
+
+	// This should be done AFTER calling p.invokeDispatcher not before
 	p.current.isIndependent = true
 	p.heap.Save()
 }
@@ -65,6 +67,8 @@ func (p *Processor) invokeInternal() {
 
 func (p *Processor) indInvokeInternal() {
 	p.invokeInternal()
+
+	// This should be done AFTER calling p.invokeInternal not before
 	p.current.isIndependent = true
 	p.heap.Save()
 }
@@ -100,7 +104,7 @@ func (p *Processor) pushC64() {
 	p.current.pc += 8
 }
 
-func (p *Processor) pop64() {
+func (p *Processor) pop() {
 	p.current.operandStack.shrinkTo(p.current.operandStack.length() - 8)
 }
 

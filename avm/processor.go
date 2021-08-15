@@ -107,6 +107,7 @@ func (p *Processor) callMethod(context, app, method prefix.Identifier64) {
 }
 
 func (p *Processor) updateCurrentCallContext() {
+	// This function MUST NOT panic
 	if p.callStackQueue == nil {
 		p.current = nil
 		p.nextLocalFrame = nil
@@ -151,15 +152,15 @@ func (p *Processor) returnBytes(n int64, status ErrorCode) {
 		p.callStackQueue[0][top-1] = nil
 		p.callStackQueue[0] = p.callStackQueue[0][:top-1]
 	}
+	if p.current.entranceLock != nil {
+		*p.current.entranceLock = false
+	}
+	p.errorStatus = status
 	if status != NoError {
 		p.heap.Restore()
 	} else if p.current.isIndependent || p.callStackQueue == nil {
 		p.heap.Discard()
 	}
-	if p.current.entranceLock != nil {
-		*p.current.entranceLock = false
-	}
-	p.errorStatus = status
 	p.updateCurrentCallContext()
 }
 

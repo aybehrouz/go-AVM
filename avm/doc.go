@@ -25,7 +25,7 @@ We avoid using interfaces for frequently used methods. However, using
 ordinary functions for operations does not affect performance, and we use
 them freely. Instead of using general purpose functions we try to use
 separate functions for different operations as much as possible. This will
-reduce the number of if-then-else checks, but can make harm the
+reduce the number of if-then-else checks, but could harm the
 maintainability of the code. To mitigate this problem we use code
 generation techniques to generate repetitive codes and keep the code
 maintainable.
