@@ -101,6 +101,20 @@ func TestController_Emulate(t *testing.T) {
 			wantError:  avm.NoError,
 		},
 		{
+			name: "parameter passing",
+			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
+				17: {
+					0: assembler.AssembleString("pushC64 777777 argC16 2d0 pushC64 5 invokeInternal ret64"),
+					5: assembler.AssembleString("lfLoadC16 2d0 pushC64 10 iAdd ret64"),
+				},
+			}),
+			calledApp:  17,
+			wantOutput: []byte{0x3b, 0xde, 0xb, 0x0, 0x0, 0x0, 0x0, 0x0},
+			wantError:  avm.NoError,
+		},
+
+		// Throw instruction tests:
+		{
 			name: "simple throw",
 			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
 				17: {
@@ -152,7 +166,7 @@ func TestController_Emulate(t *testing.T) {
 			wantError:  avm.SoftwareError,
 		},
 		{
-			name: "multiple Throw dispatcher",
+			name: "multiple external throw",
 			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
 				0x11: {
 					0: assembler.AssembleString("pushC64 6 pushC64 0x12 invokeDispatcher iAdd ret64"),
@@ -193,18 +207,60 @@ func TestController_Emulate(t *testing.T) {
 			wantHeapLog: "root<-11   Save   root<-12   Save   root<-13   root<-14   Restore   root<-11   Discard",
 			wantError:   avm.NoError,
 		},
+
+		// Entrance lock tests:
 		{
-			name: "parameter passing",
+			name: "simple lock",
 			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
-				17: {
-					0: assembler.AssembleString("pushC64 777777 argC16 2d0 pushC64 5 invokeInternal ret64"),
-					5: assembler.AssembleString("lfLoadC16 2d0 pushC64 10 iAdd ret64"),
+				0x11: {
+					0: assembler.AssembleString("pushC64 6 pushC64 0x2 invokeInternal iAdd ret64"),
+					2: assembler.AssembleString("enter pushC64 4 pushC64 0x12 invokeDispatcher ret64"),
+				},
+				0x12: {
+					0: assembler.AssembleString("pushC64 0x11 invokeDispatcher ret64"),
 				},
 			}),
-			calledApp:  17,
-			wantOutput: []byte{0x3b, 0xde, 0xb, 0x0, 0x0, 0x0, 0x0, 0x0},
+			calledApp:   0x11,
+			wantOutput:  nil,
+			wantHeapLog: "root<-11   Save   root<-11   root<-12   root<-11   root<-11   Restore",
+			wantError:   avm.Reentrancy,
+		},
+		{
+			name: "simple lock catch",
+			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
+				0x11: {
+					0: assembler.AssembleString("pushC64 6 pushC64 0x2 invokeInternal iAdd ret64"),
+					2: assembler.AssembleString("enter pushC64 4 pushC64 0x12 indInvokeDispatcher ret64"),
+				},
+				0x12: {
+					0: assembler.AssembleString("pushC64 0x11 invokeDispatcher ret64"),
+				},
+			}),
+			calledApp:  0x11,
+			wantOutput: []byte{10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			wantHeapLog: "root<-11   Save   root<-11   root<-12   Save   root<-11   root<-11   Restore   " +
+				"root<-11   root<-11   Discard",
+			wantError: avm.NoError,
+		},
+		{
+			name: "simple lock opening",
+			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{
+				0x11: {
+					0: assembler.AssembleString("pushC64 0x2 invokeInternal lfLoadC16 2d0 jmpEqC16 2d10" +
+						" pushC64 0x12 invokeDispatcher iAdd ret64"),
+					2: assembler.AssembleString("enter pushC64 4 ret64"),
+				},
+				0x12: {
+					0: assembler.AssembleString("pushC64 4 argC16 2d0 pushC64 0x11 invokeDispatcher ret64"),
+				},
+			}),
+			calledApp:  0x11,
+			arguments:  []byte{6, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			wantOutput: []byte{14, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 			wantError:  avm.NoError,
 		},
+
+		// Full programs:
 		{
 			name: "sum 1:1",
 			methodArea: memory.NewMocker(map[prefix.Identifier64]map[prefix.Identifier64][]byte{

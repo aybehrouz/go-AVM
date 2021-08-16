@@ -82,7 +82,7 @@ func (c *Controller) Emulate() ([]byte, ErrorCode) {
 func (c *Controller) EmulateNextInstruction() (eof bool) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("panic: ", r)
+			log.Println("panic:", r)
 			c.processor.throwBytes(0, convertToErrorCode(r))
 			eof = false
 		}

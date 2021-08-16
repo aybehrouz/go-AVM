@@ -60,7 +60,52 @@ func TestReadInt64(t *testing.T) {
 }
 
 func TestCopyBytes(t *testing.T) {
+	assert := assert.New(t)
+	src := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	dst := make([]byte, 15)
 
+	CopyBytes(dst, 2, src, 3, 8)
+	want := []byte{0x0, 0x0, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0x0, 0x0, 0x0, 0x0, 0x0}
+	assert.Equal(want, dst)
+
+	CopyBytes(dst, 0, src, 11, 1)
+	want = []byte{0xc, 0x0, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0x0, 0x0, 0x0, 0x0, 0x0}
+	assert.Equal(want, dst)
+
+	CopyBytes(dst, 1, src, 11, 0)
+	assert.Equal(want, dst)
+
+	CopyBytes(dst, 0, src, 0, 12)
+	want = []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0x0, 0x0, 0x0}
+	assert.Equal(want, dst)
+
+	CopyBytes(dst, 3, src, 0, 12)
+	want = []byte{0x1, 0x2, 0x3, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc}
+	assert.Equal(want, dst)
+
+	assert.Panics(func() {
+		CopyBytes(dst, 0, src, 0, 15)
+	})
+
+	assert.Panics(func() {
+		CopyBytes(dst, 8, src, 0, 8)
+	})
+
+	assert.Panics(func() {
+		CopyBytes(dst, 0, src, 5, 8)
+	})
+
+	assert.Panics(func() {
+		CopyBytes(dst, -1, src, 0, 8)
+	})
+
+	assert.Panics(func() {
+		CopyBytes(dst, 15, src, 0, 1)
+	})
+
+	assert.Panics(func() {
+		CopyBytes(dst, 0, src, -1, 1)
+	})
 }
 
 func BenchmarkCopy(b *testing.B) {
